@@ -1,27 +1,43 @@
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class ChatClient {
 	
 	public static void main(String[] args) {
-		if (args.length != 2) {
-			System.err.println("Usage: java ChatClient <serverHost> <port#>");
+		if (args.length != 0) {
+			System.err.println("Usage: java ChatClient");
 			System.exit(1);
 		}
-		// TODO: get rid of command line args and make them internal commands
-		String serverHost = args[0];
-		int port = Integer.parseInt(args[1]);
-		
-		Client client = new Client(serverHost, port);
-		client.play();
+
+		promptForConnect();
+	}
+
+	private static void promptForConnect() {
+		Scanner input = new Scanner(System.in);
+		System.out.println("Welcome to Chat! If you want to connect to a server, type \"/connect <server> <port>\".");
+		System.out.print("> ");
+		if(input.hasNextLine()) {
+			String[] command = input.nextLine().split(" ");
+			if(!command[0].equals("/connect")) {
+				System.out.println("/connect is the only available command right now.");
+				promptForConnect();
+			} else {
+				try {
+					System.out.println("Attempting to connect to the server at " + command[1] + ":" + command[2] + "...");
+					Client client = new Client(command[1], Integer.parseInt(command[2]));
+					client.play();
+					promptForConnect();
+				} catch (NumberFormatException e) {
+					System.out.println("<port> must be a number. Try again.");
+					promptForConnect();
+				}
+			}
+		}
 	}
 }
-
 
 class Client {
 	
@@ -34,6 +50,8 @@ class Client {
 	}
 	
 	public void play() {
+
+		String message;
 				
 		try {
 			Socket s = new Socket(host, port);
@@ -41,25 +59,65 @@ class Client {
 			OutputStream out = s.getOutputStream();
 			ObjectInputStream oin = new ObjectInputStream(in);
 			ObjectOutputStream oout = new ObjectOutputStream(out);
+			MessageWatcher watcher = new MessageWatcher(oin);
 			Scanner input = new Scanner(System.in);
+
+			watcher.start();
 			
-			while (true) {
-
-				Data d = (Data) oin.readObject();
-				System.out.println(d.getData());
-				System.out.print("> ");				
+			while (s.isConnected()) {
 //				System.out.print(String.format("\033[%d;%dr", 2,20));
-				String message = input.nextLine();
-				oout.writeObject(new Data(message));
-				
+				if(input.hasNextLine()) {
+					message = input.nextLine();
+					oout.writeObject(new Data(message));
+					// Recognize quit
+					if (message.split(" ")[0].equals("/quit")) {
+						s.close();
+					}
+					System.out.print("> ");
+				}
 			}
-
 		} catch (IOException e1) {
-			System.out.println(e1);
-		} catch (ClassNotFoundException e2) {
-			System.out.println(e2);
-		} 
+			System.out.println("Failed to connect to the server. Returning to main menu.");
+		}
+	}
+}
+
+class MessageWatcher extends Thread {
+
+	private ObjectInputStream stream;
+	private boolean failed = false;
+
+	public MessageWatcher(ObjectInputStream stream) {
+		this.stream = stream;
 	}
 
+	@Override
+	public void run() {
+		Data d = null;
+		while(!failed) {
+			try {
+				d = (Data) stream.readObject();
+			} catch(SocketException | EOFException e) {
+				print("Lost connection to the server.");
+				return;
+			} catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
+			}
 
+			// Clear prompt and rewrite after if it's there
+			// Handle message type
+			if(d instanceof Message) {
+				Message m = (Message) d;
+				print(m.getSender().getName() + ": " + d.getData());
+			} else {
+				// This is a message from the server
+				print("\033[34m SERVER: " + d.getData() + "\033[0m");
+			}
+		}
+	}
+	// Print, but remove the prompt and add it back
+	private void print(String msg) {
+		System.out.println("\r" + msg);
+		System.out.print("> ");
+	}
 }

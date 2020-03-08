@@ -1,26 +1,34 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
+import java.util.ArrayList;
 
 
 public class ChatServer
 {
+	private static int DEFAULT_PORT = 5005;
+	private static int DEFAULT_DEBUG = 0;
+
 	public static void main(String[] args) {
-		if (args.length != 2) {
-			System.err.println("Usage: java ChatServer <serverHost> <port#>");
+		if (args.length != 2 && args.length != 4) {
+			System.err.println("Usage: java ChatServer -p <port#>");
 			System.exit(1);
 		}
-		String serverHost = args[0];
-		int port = Integer.parseInt(args[1]);
-		
-		serverHost = "localhost";
-		Server server = new Server(port);
+
+		int port = DEFAULT_PORT;
+		int debugLevel = DEFAULT_DEBUG;
+
+		for(int i = 0; i < args.length; i++) {
+			switch(args[i]) {
+				case "-p":
+					port = Integer.parseInt(args[i+1]);
+					break;
+				case "-d":
+					debugLevel = Integer.parseInt(args[i+1]);
+			}
+		}
+		Server server = new Server(port, debugLevel);
 		server.runServer();
 	}
 }
@@ -29,16 +37,16 @@ public class ChatServer
 class Server
 {
 	private ServerSocket s;
-	public static int count=0;
+	private ArrayList<Channel> channels = new ArrayList<>();
 
-	public Server(int port) {
+	public Server(int port, int debug) {
 		try {
 			s = new ServerSocket(port);
+			channels.add(new Channel(this, Channel.CHANNEL_TYPE.INITIAL_CHANNEL, "Default channel", Channel.simpleMotd(port)));
 		} catch (IOException e) {
 			System.err.println(e);
 		}
 	}
-
 
 	/**
 	 * The method that handles the clients, one at a time.
@@ -48,87 +56,26 @@ class Server
 		try {
 			while(true) {
 				client = s.accept();
-				Server.count++;
 				System.out.println("Thread count = "+Thread.activeCount());
-				System.out.println("Starting game #"+Server.count+" with client " + InetAddress.getLocalHost());
-				new ServerConnection(client, Server.count).start();
+				System.out.println("User has connected from " + InetAddress.getLocalHost());
+				// Add user to default channel
+                Connection newConnection = new Connection(new User(client), channels.get(0));
+				channels.get(0).connect(newConnection);
+                newConnection.start();
 			}
 		} catch (IOException e) {
 			System.err.println(e);
 		}
 	}
-}
 
-class ServerConnection extends Thread {
-	private InputStream in;
-	private OutputStream out;
-	private Socket sock;
-	private int count;
+    public ArrayList<Channel> getChannels() {
+        return channels;
+    }
 
-	
-	ServerConnection(Socket client, int count) throws SocketException {
-		this.sock = client;
-		this.count = count;
-		setPriority(NORM_PRIORITY - 1);
-	}
-	
-	@Override
-	public void run() {
-		ObjectInputStream oin;
-		ObjectOutputStream oout;
-		
-		try {
-			out = sock.getOutputStream();
-			in = sock.getInputStream();
-			oout = new ObjectOutputStream(out);
-			oin = new ObjectInputStream(in);
-			oout.writeObject(new Data(welcomeMessage()));
-			oout.flush();
-			while (true) {
-
-				Data d = (Data) oin.readObject();
-				if(d.getData().startsWith("/")) {
-					// Command stuff
-					System.out.println("Command received!");
-					oout.writeObject(new Data("Command received!"));
-					oout.flush();
-				}
-				else {
-					// Message
-					System.out.println("Message received.");
-					oout.writeObject(new Data("Message received."));
-					oout.flush();
-				}
-
-			}
-			
-		} catch (IOException e) {
-			System.err.println(e);
-			System.out.println("Game #"+this.count+" Over!");
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
-	
-	public String welcomeMessage() {
-		String retVal = "";
-		
-		retVal += "Welcome to this very flimsy chat server!\n";
-		retVal += "+------------------------+--------------------------------------------------------------------+\n";
-		retVal += "| Command                | Description                                                        |\n";
-		retVal += "+------------------------+--------------------------------------------------------------------+\n";
-		retVal += "| /connect <server-name> | Connect to named server                                            |\n";
-		retVal += "| /nick <nickname>       | Pick a nickname (should be unique among active users)              |\n";
-		retVal += "| /list                  | List channels and number of users                                  |\n";
-		retVal += "| /join <channel>        | Join a channel, all text typed is sent to all users on the channel |\n";
-		retVal += "| /leave                 | Leave the current channel                                          |\n";
-		retVal += "| /quit                  | Leave chat and disconnect from server                              |\n";
-		retVal += "| /help                  | Print out help message                                             |\n";
-		retVal += "| /stats                 | Ask server for some stats                                          |\n";
-		retVal += "+------------------------+--------------------------------------------------------------------+\n";
-		
-		return retVal;
-	}
+    public Channel getDefaultChannel() {
+	    for(Channel channel : channels) {
+	        if(channel.isInitial()) return channel;
+        }
+	    return null;
+    }
 }
