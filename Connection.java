@@ -80,7 +80,7 @@ public class Connection extends Thread {
                 else {
                     // Message
                     System.out.println("Message received.");
-                    channel.sendChannelMessage(new Message(d.getData(), user));
+                    channel.sendChannelMessage(new Message(d.getData(), user.getName()));
                     oout.flush();
                 }
             }

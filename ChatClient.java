@@ -108,7 +108,7 @@ class MessageWatcher extends Thread {
 			// Handle message type
 			if(d instanceof Message) {
 				Message m = (Message) d;
-				print(m.getSender().getName() + ": " + d.getData());
+				print(m.getSender() + ": " + d.getData());
 			} else {
 				// This is a message from the server
 				print("\033[34m SERVER: " + d.getData() + "\033[0m");

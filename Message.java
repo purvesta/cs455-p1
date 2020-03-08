@@ -4,13 +4,12 @@ import java.util.Date;
 /**
  * Message class for keeping metadata and message contents accessible
  */
-public class Message extends Data implements Serializable {
+public class Message extends Data {
 
-    private static final long serialVersionUID = 1210446417908333497L;
-    private User sender;
+    private String sender;
     private Date sentAt;
 
-    public Message(String content, User sender) {
+    public Message(String content, String sender) {
         super(content);
         this.sender = sender;
         this.sentAt = new Date();
@@ -20,7 +19,7 @@ public class Message extends Data implements Serializable {
         return sentAt;
     }
 
-    public User getSender() {
+    public String getSender() {
         return sender;
     }
 }

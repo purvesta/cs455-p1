@@ -1,9 +1,12 @@
+import java.io.Serializable;
 import java.net.Socket;
 
 /**
  * Represents a user connected to the server.
  */
-public class User {
+public class User implements Serializable {
+
+    private static final long serialVersionUID = -1656837040522629290L;
     private Socket socket;
     private String name;
 
