@@ -78,4 +78,8 @@ class Server
         }
 	    return null;
     }
+    
+    public void addChannel(Channel c) {
+    	channels.add(c);
+    }
 }

@@ -44,6 +44,21 @@ public class Connection extends Thread {
                                 oout.writeObject(new Data(channel.getName() + ": " + channel.getUserNumber() + " users"));
                             }
                             break;
+                        case "/create":
+                        	boolean exists = false;
+                        	for(Channel channel : channel.getServer().getChannels()) {
+                        		if(channel.getName().equals(command[1])) {
+                        			oout.writeObject(new Data("Channel " + command[1] + " already exists. Type \"/help\" for help joining the channel."));
+                        			exists = true;
+                        			break;
+                        		}
+                        	}
+                        	// Make new channel
+                        	if(!exists) {
+                        		Channel c = new Channel(this.channel.getServer(), command[1], "Woah...");
+                    			this.channel.getServer().addChannel(c);
+                        	}
+                        	break;
                         case "/join":
                             Channel newChannel = null;
                             for(Channel channel : channel.getServer().getChannels()) {
@@ -127,6 +142,7 @@ public class Connection extends Thread {
         retVal += "| /connect <server-name> | Connect to named server                                            |\n";
         retVal += "| /nick <nickname>       | Pick a nickname (should be unique among active users)              |\n";
         retVal += "| /list                  | List channels and number of users                                  |\n";
+        retVal += "| /create <channel-name> | Create a new channel with the specified name                       |\n";
         retVal += "| /join <channel>        | Join a channel, all text typed is sent to all users on the channel |\n";
         retVal += "| /leave                 | Leave the current channel                                          |\n";
         retVal += "| /quit                  | Leave chat and disconnect from server                              |\n";
