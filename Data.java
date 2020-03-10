@@ -1,5 +1,8 @@
 import java.io.Serializable;
 
+/**
+ * A serializable object that can contain any type of message between clients.
+ */
 public class Data extends Object implements Serializable {
 	private String data;
 
@@ -8,7 +11,10 @@ public class Data extends Object implements Serializable {
 	public Data(String s) {
 		this.data = s;
 	}
-		
+
+	/**
+	 * Get the data's contents
+	 */
 	public String getData() {
 		return this.data;
 	}

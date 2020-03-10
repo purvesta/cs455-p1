@@ -1,24 +1,19 @@
-import java.io.Serializable;
-import java.util.Date;
-
 /**
- * Message class for keeping metadata and message contents accessible
+ * Message class for keeping metadata and message contents accessible. Reserved for messages between clients.
  */
 public class Message extends Data {
 
+    private static final long serialVersionUID = 5239166769822466720L;
     private String sender;
-    private Date sentAt;
 
     public Message(String content, String sender) {
         super(content);
         this.sender = sender;
-        this.sentAt = new Date();
     }
 
-    public Date getSentAt() {
-        return sentAt;
-    }
-
+    /**
+     * Get the username of the person who sent this message.
+     */
     public String getSender() {
         return sender;
     }

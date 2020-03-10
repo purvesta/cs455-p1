@@ -30,6 +30,7 @@ public class ChatServer
 					debugLevel = Integer.parseInt(args[i+1]);
 			}
 		}
+		System.out.println("Server created on port " + port + ".");
 		Server server = new Server(port, debugLevel);
 		server.runServer();
 	}
@@ -41,14 +42,16 @@ class Server
 	private ServerSocket s;
 	private ArrayList<Channel> channels = new ArrayList<>();
 	private int messageCount = 0;
+	private int debugLevel;
 	private Timer t;
 
 	public Server(int port, int debug) {
+		debugLevel = debug;
 		try {
 			s = new ServerSocket(port);
 			channels.add(new Channel(this, Channel.CHANNEL_TYPE.INITIAL_CHANNEL, "Default channel", Channel.simpleMotd(port)));
 		} catch (IOException e) {
-			System.err.println(e);
+			System.err.println(e.getMessage());
 		}
 	}
 
@@ -64,8 +67,6 @@ class Server
 			Runtime.getRuntime().addShutdownHook(new ShutdownHook());
 			while(true) {
 				client = s.accept();
-				System.out.println("Thread count = "+Thread.activeCount());
-				System.out.println("User has connected from " + InetAddress.getLocalHost());
 				// Add user to default channel
                 Connection newConnection = new Connection(new User(client), channels.get(0));
 				channels.get(0).connect(newConnection);
@@ -76,11 +77,17 @@ class Server
 		}
 	}
 
+	/**
+	 * Get all channels on the server.
+	 */
     public ArrayList<Channel> getChannels() {
         return channels;
     }
 
-    public Channel getDefaultChannel() {
+	/**
+	 * Get the default channel of this server.
+	 */
+	public Channel getDefaultChannel() {
 	    for(Channel channel : channels) {
 	        if(channel.isInitial()) return channel;
         }
@@ -90,25 +97,46 @@ class Server
     public void addChannel(Channel c) {
     	channels.add(c);
     }
-    
-    public synchronized void incrementMessageCount() {
+
+	/**
+	 * Increment the count of messages sent on this server.
+	 */
+	public synchronized void incrementMessageCount() {
     	// If a message is sent in any channel, the server is no longer idle
     	// Therefore, we reset the timer
     	this.resetTimer();
     	this.messageCount++;
     }
-    
-    public int getMessageCount() {
+
+	/**
+	 * Get the number of messages sent through this server.
+	 * @return
+	 */
+	public int getMessageCount() {
     	return this.messageCount;
     }
-    
+
+	/**
+	 * Print the message if debug messages are enabled.
+	 * @param msg Message to print
+	 */
+	public void debugPrint(String msg) {
+		if(debugLevel > 0) System.out.println("[DEBUG]: " + msg);
+	}
+
+	/**
+	 * Reset the idle timer.
+	 */
     private void resetTimer() {
     	t.cancel();
     	this.t = new Timer();
     	t.schedule(new Task(), 5*60*1000);
     }
-    
-    class ShutdownHook extends Thread {
+
+	/**
+	 * Shutdown timer class.
+	 */
+	class ShutdownHook extends Thread {
     	public void run() {
     		for (Channel c : channels) {
     			c.sendChannelMessage(new Data("Shutting down..."));
@@ -116,9 +144,13 @@ class Server
     		}
     	}
     }
-    
-    class Task extends TimerTask {
+
+	/**
+	 * Task that runs on timeout.
+	 */
+	class Task extends TimerTask {
     	public void run() {
+    		System.out.println("Server has been idle for longer than expected. Shutting down.");
     		System.exit(0);
     	}
     }

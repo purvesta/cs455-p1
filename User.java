@@ -10,7 +10,7 @@ public class User implements Serializable {
     private Socket socket;
     private String name;
 
-    private static String DEFAULT_NAME = "Anonymous User";
+    public static String DEFAULT_NAME = "Anonymous User";
 
     public User(Socket socket, String name) {
         this.socket = socket;
@@ -21,14 +21,23 @@ public class User implements Serializable {
         this(socket, DEFAULT_NAME);
     }
 
+    /**
+     * Get the socket the user is connected through.
+     */
     public Socket getSocket() {
         return socket;
     }
 
+    /**
+     * Get the user's name.
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Set the user's name.
+     */
     public void setName(String name) {
         this.name = name;
     }

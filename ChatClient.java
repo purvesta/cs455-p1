@@ -1,9 +1,11 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.Scanner;
 
+/**
+ * Client wrapper class and entry point.
+ */
 public class ChatClient {
 	
 	public static void main(String[] args) {
@@ -11,10 +13,12 @@ public class ChatClient {
 			System.err.println("Usage: java ChatClient");
 			System.exit(1);
 		}
-
 		promptForConnect();
 	}
 
+    /**
+     * Prompt the user to connect to a server. Once valid input is provided, open a connection.
+     */
 	private static void promptForConnect() {
 		Scanner input = new Scanner(System.in);
 		System.out.println("Welcome to Chat! If you want to connect to a server, type \"/connect <server> <port>\".");
@@ -28,7 +32,7 @@ public class ChatClient {
 				try {
 					System.out.println("Attempting to connect to the server at " + command[1] + ":" + command[2] + "...");
 					Client client = new Client(command[1], Integer.parseInt(command[2]));
-					client.play();
+					client.start();
 					promptForConnect();
 				} catch (NumberFormatException e) {
 					System.out.println("<port> must be a number. Try again.");
@@ -39,6 +43,9 @@ public class ChatClient {
 	}
 }
 
+/**
+ * Client for sending and receiving messages from the server.
+ */
 class Client {
 	
 	private String host;
@@ -48,8 +55,11 @@ class Client {
 		this.host = host;
 		this.port = port;
 	}
-	
-	public void play() {
+
+    /**
+     * Start the client.
+     */
+	public void start() {
 
 		String message;
 				
@@ -65,14 +75,17 @@ class Client {
 			watcher.start();
 			
 			while (s.isConnected()) {
-//				System.out.print(String.format("\033[%d;%dr", 2,20));
 				if(input.hasNextLine()) {
+                    // Remove the previous line
 					message = input.nextLine();
 					oout.writeObject(new Data(message));
 					// Recognize quit
-					if (message.split(" ")[0].equals("/quit")) {
+                    String[] command = message.split(" ");
+					if (command[0].equals("/quit")) {
 						s.close();
-					}
+					} else if (command[0].equals("/nick") && command.length == 2) {
+                        watcher.setLocalName(command[1]);
+                    }
 					System.out.print("> ");
 				}
 			}
@@ -82,10 +95,14 @@ class Client {
 	}
 }
 
+/**
+ * Watch for messages in a separate thread, so we can update messages as soon as we get them.
+ */
 class MessageWatcher extends Thread {
 
 	private ObjectInputStream stream;
 	private boolean failed = false;
+	private String localName = "Anonymous User";
 
 	public MessageWatcher(ObjectInputStream stream) {
 		this.stream = stream;
@@ -107,17 +124,33 @@ class MessageWatcher extends Thread {
 			// Clear prompt and rewrite after if it's there
 			// Handle message type
 			if(d instanceof Message) {
-				Message m = (Message) d;
-				print(m.getSender() + ": " + d.getData());
+                Message m = (Message) d;
+			    if(m.getSender().equals(localName)) {
+			        print("\033[33mYou: " + d.getData() + "\033[0m");
+                } else {
+                    print(m.getSender() + ": " + d.getData());
+                }
+
 			} else {
 				// This is a message from the server
 				print("\033[34m SERVER: " + d.getData() + "\033[0m");
 			}
 		}
 	}
-	// Print, but remove the prompt and add it back
+    /**
+     * Print, but remove the prompt and add it back
+     * @param msg String to print to console
+     */
 	private void print(String msg) {
 		System.out.println("\r" + msg);
 		System.out.print("> ");
 	}
+
+    /**
+     * Set the local name cache for printing messages sent from this client.
+     * @param name
+     */
+	public void setLocalName(String name) {
+	    localName = name;
+    }
 }
