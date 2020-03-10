@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.ArrayList;
 
 
@@ -39,6 +41,7 @@ class Server
 	private ServerSocket s;
 	private ArrayList<Channel> channels = new ArrayList<>();
 	private int messageCount = 0;
+	private Timer t;
 
 	public Server(int port, int debug) {
 		try {
@@ -54,6 +57,9 @@ class Server
 	 */
 	public void runServer() {
 		Socket client;
+		t = new Timer();
+		// New timer scheduled for 5 min
+		t.schedule(new Task(), 5*60*1000);
 		try {
 			Runtime.getRuntime().addShutdownHook(new ShutdownHook());
 			while(true) {
@@ -86,11 +92,20 @@ class Server
     }
     
     public synchronized void incrementMessageCount() {
+    	// If a message is sent in any channel, the server is no longer idle
+    	// Therefore, we reset the timer
+    	this.resetTimer();
     	this.messageCount++;
     }
     
     public int getMessageCount() {
     	return this.messageCount;
+    }
+    
+    private void resetTimer() {
+    	t.cancel();
+    	this.t = new Timer();
+    	t.schedule(new Task(), 5*60*1000);
     }
     
     class ShutdownHook extends Thread {
@@ -99,6 +114,12 @@ class Server
     			c.sendChannelMessage(new Data("Shutting down..."));
     			c.sendChannelMessage(new Data("Total messages sent: "+messageCount));
     		}
+    	}
+    }
+    
+    class Task extends TimerTask {
+    	public void run() {
+    		System.exit(0);
     	}
     }
 }
