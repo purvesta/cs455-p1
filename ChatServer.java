@@ -38,6 +38,7 @@ class Server
 {
 	private ServerSocket s;
 	private ArrayList<Channel> channels = new ArrayList<>();
+	private int messageCount = 0;
 
 	public Server(int port, int debug) {
 		try {
@@ -81,5 +82,13 @@ class Server
     
     public void addChannel(Channel c) {
     	channels.add(c);
+    }
+    
+    public synchronized void incrementMessageCount() {
+    	this.messageCount++;
+    }
+    
+    public int getMessageCount() {
+    	return this.messageCount;
     }
 }

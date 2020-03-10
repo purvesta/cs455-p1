@@ -82,6 +82,8 @@ public class Channel {
     // Messaging
 
     public void sendChannelMessage(Data message) {
+    	if(message instanceof Message)
+        	this.getServer().incrementMessageCount();
         for(Connection connection : connections) {
             // Verify that the user is still in the channel
             if(connection.getChannel() != this) {
