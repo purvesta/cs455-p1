@@ -55,6 +55,7 @@ class Server
 	public void runServer() {
 		Socket client;
 		try {
+			Runtime.getRuntime().addShutdownHook(new ShutdownHook());
 			while(true) {
 				client = s.accept();
 				System.out.println("Thread count = "+Thread.activeCount());
@@ -90,5 +91,14 @@ class Server
     
     public int getMessageCount() {
     	return this.messageCount;
+    }
+    
+    class ShutdownHook extends Thread {
+    	public void run() {
+    		for (Channel c : channels) {
+    			c.sendChannelMessage(new Data("Shutting down..."));
+    			c.sendChannelMessage(new Data("Total messages sent: "+messageCount));
+    		}
+    	}
     }
 }
