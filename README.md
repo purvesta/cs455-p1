@@ -36,3 +36,7 @@ Testing this code was fairly simple. Through simply interacting with the chat ap
 Throughout the development process, we communicated well as a team. This allowed for easy distribution of the workload. I (Tanner) was able to tackle implementing features such as server/client initial communication and connection, as well as the creation of channels, server timeout, shutdown hook, and the help and stats command. Nate was able to perfect the communication between the client and server as well as develop the code to spin off new threads for each incoming connection, as well as the nick, join, leave, and quit commands.
 
 As far as the development process goes, we simply used a github repository and communication to tackle the project. This was a system that worked quite well in this scenario.
+
+## Extras
+
+Video Demonstration: https://youtu.be/xEOmUHRLhCI
