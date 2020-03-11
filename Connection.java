@@ -32,6 +32,7 @@ public class Connection extends Thread {
                 Data d = (Data) oin.readObject();
                 // Handle commands
                 if(d.getData().startsWith("/")) {
+                    channel.getServer().resetTimer();
                     channel.getServer().debugPrint("Command " + d.getData().split(" ")[0] + " received!");
                     handleCommand(d.getData());
                     oout.flush();

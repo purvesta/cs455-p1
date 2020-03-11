@@ -71,6 +71,7 @@ class Server
                 Connection newConnection = new Connection(new User(client), channels.get(0));
 				channels.get(0).connect(newConnection);
                 newConnection.start();
+                resetTimer();
 			}
 		} catch (IOException e) {
 			System.err.println(e);
@@ -127,7 +128,7 @@ class Server
 	/**
 	 * Reset the idle timer.
 	 */
-    private void resetTimer() {
+    public void resetTimer() {
     	t.cancel();
     	this.t = new Timer();
     	t.schedule(new Task(), 5*60*1000);
